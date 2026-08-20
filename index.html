@@ -6,6 +6,7 @@
 <title>질문이 쌓이는 기록장 · 인체구조와 기능</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <style>
   :root{
     --bg:#FCF3D9;
@@ -65,8 +66,10 @@
     text-transform:uppercase;margin-left:22px;
   }
   h1{
-    font-size:28px;line-height:1.22;margin:6px 0 0;font-weight:800;color:var(--ink);
+    font-size:clamp(19px, 6.2vw, 28px);
+    line-height:1.22;margin:6px 0 0;font-weight:800;color:var(--ink);
     letter-spacing:-.02em;
+    white-space:nowrap;
   }
   .sub{font-size:13.5px;color:var(--ink-soft);margin-top:8px;font-weight:600;}
 
@@ -120,22 +123,21 @@
 
   .link-admin{ display:none; }
 
-  /* 회차 트래커 - 서명 요소: 살짝 기울어진 스티커 배지 5개 */
-  .track{display:flex;gap:6px;margin-bottom:18px;}
+  /* 회차 트래커 - 조회화면에서 진행현황 미리보기 용도로 사용 */
+  .track{display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap;}
   .track .tag{
-    flex:1;text-align:center;padding:10px 2px;border-radius:16px;
-    border:var(--thin) solid var(--ink);font-size:12px;color:var(--ink-soft);
+    flex:1;min-width:52px;text-align:center;padding:10px 2px;border-radius:16px;
+    border:var(--thin) solid var(--ink);font-size:11px;color:var(--ink-soft);
     font-weight:800;background:#FFFDF6;
     transform:rotate(-1.5deg);
     box-shadow:var(--shadow-thin);
   }
   .track .tag:nth-child(even){transform:rotate(1.5deg);}
   .track .tag .num{
-    font-size:19px;display:block;color:var(--ink);font-weight:800;
+    font-size:14px;display:block;color:var(--ink);font-weight:800;
   }
   .track .tag.done{background:var(--sky);color:var(--sky-ink);}
   .track .tag.done .num{color:var(--sky-ink);}
-  .track .tag.current{border-color:var(--accent-dark);box-shadow:0 0 0 2px rgba(231,174,30,.2);}
 
   .chip-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
   .chip{
@@ -144,7 +146,7 @@
   }
 
   .rec-card{border:var(--thin) solid var(--ink);border-radius:18px;padding:16px 18px;margin-bottom:10px;background:#FFFDF6;box-shadow:var(--shadow-thin);}
-  .rec-card .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .rec-card .head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px;}
   .rec-card .head .badge{
     font-size:13px;font-weight:800;background:var(--sky);color:var(--sky-ink);
     padding:4px 12px;border-radius:999px;border:var(--thin) solid var(--ink);
@@ -161,6 +163,7 @@
     text-align:left;padding:9px 6px;border-bottom:1px solid rgba(26,26,26,.12);
   }
   table.admin-table th{color:var(--ink-soft);font-weight:800;}
+  table.admin-table td.blank{color:#C7BE9F;}
 
   .tabs{display:flex;gap:6px;margin-bottom:16px;}
   .tabs button{flex:1;background:#FFFDF6;color:var(--ink-soft);font-size:13px;padding:11px 10px;}
@@ -176,7 +179,7 @@
   .list-item{display:flex;justify-content:space-between;align-items:center;padding:9px 2px;border-bottom:1px solid rgba(26,26,26,.12);font-size:14px;}
 
   .table-scroll{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;}
-  .table-scroll table{min-width:420px;}
+  .table-scroll table{min-width:380px;}
 
   /* ===== 모바일 반응형 ===== */
   @media (max-width: 480px){
@@ -185,22 +188,16 @@
     .brand{font-size:13.5px;}
     .brand-dot{width:9px;height:9px;}
     .nav-admin-btn{padding:7px 12px;font-size:12px;}
-    h1{font-size:23px;}
     .eyebrow{font-size:11px;margin-left:18px;}
     .sub{font-size:13px;}
     .card{padding:16px;border-radius:18px;}
-    .track .tag{padding:8px 1px;font-size:10.5px;border-radius:12px;}
-    .track .tag .num{font-size:16px;}
+    .track .tag{padding:8px 1px;font-size:10px;border-radius:12px;}
+    .track .tag .num{font-size:13px;}
     .chip{font-size:11.5px;padding:6px 10px;}
     .rec-card{padding:14px;}
     button{font-size:14px;padding:13px 16px;}
     .row-inline{flex-direction:column;}
     .btn-row{gap:8px;}
-  }
-  @media (max-width: 360px){
-    h1{font-size:21px;}
-    .track .tag{font-size:9.5px;}
-    .track .tag .num{font-size:14px;}
   }
 </style>
 </head>
@@ -215,7 +212,7 @@
   <header class="top">
     <span class="doodle doodle-1">✦</span>
     <span class="eyebrow">인체구조와 기능 · 대학연계수업</span>
-    <h1>질문이 쌓이는<br>기록장</h1>
+    <h1>질문이 쌓이는 기록장</h1>
     <p class="sub" id="headerSub">학교와 이름을 선택해 입장하세요.</p>
   </header>
 
@@ -237,9 +234,10 @@
 
   <!-- ===================== 학생 입력 ===================== -->
   <section id="screen-input" class="card hidden">
-    <div class="track" id="inputTrack"></div>
+    <label for="inputDateSelect">수업 날짜</label>
+    <select id="inputDateSelect"></select>
+
     <div class="chip-row">
-      <span class="chip" id="chipDate">날짜 -</span>
       <span class="chip" id="chipSystem">계통 -</span>
     </div>
 
@@ -263,7 +261,7 @@
 
     <div id="deepDiveBox" class="hidden">
       <hr style="border:none;border-top:1px dashed var(--line);margin:18px 0;">
-      <p class="sub" style="margin-bottom:10px;">5회차를 모두 마쳤습니다. 아래에서 심화탐구 주제를 정리해보세요.</p>
+      <p class="sub" style="margin-bottom:10px;">등록된 수업을 모두 마쳤습니다. 아래에서 심화탐구 주제를 정리해보세요.</p>
       <label>① 관심 키워드 3개</label>
       <input type="text" id="ddKeywords" placeholder="예: 근육 피로, 관절염, 재활운동">
       <label>② 최종 탐구주제 후보 (1~2개)</label>
@@ -271,6 +269,7 @@
       <label>③ 선정 이유</label>
       <textarea id="ddReason" placeholder="왜 이 주제를 선택했나요?"></textarea>
       <button class="btn-primary" id="btnSaveDeepDive">심화탐구 저장 →</button>
+      <button class="btn-ghost" style="width:100%;margin-top:8px;" id="btnExportImage">통합 기록 이미지로 저장 ⬇</button>
     </div>
 
     <button class="btn-ghost" style="width:100%;margin-top:14px;" id="btnBackFromView">뒤로가기</button>
@@ -293,9 +292,12 @@
     </div>
 
     <div id="admin-overview">
+      <label for="admOverviewDate">수업 날짜 선택</label>
+      <select id="admOverviewDate"></select>
+      <button class="btn-ghost" id="btnAdmOverviewLoad" style="width:100%;margin-bottom:14px;">조회</button>
       <div class="table-scroll">
       <table class="admin-table" id="overviewTable"><thead>
-        <tr><th>학교</th><th>이름</th><th>제출</th><th>최종 제출일시</th></tr>
+        <tr><th>학교</th><th>이름</th><th>제출일시</th></tr>
       </thead><tbody></tbody></table>
       </div>
     </div>
@@ -343,6 +345,8 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbxSLdDrGsWdPSjKzX_0Hwgo
 let MASTER = { schools: [], students: [], classes: [] };
 let CURRENT = { school: '', name: '' };
 let ADMIN_PW = '';
+let currentHoicha = null;
+let studentRecordsCache = [];
 
 /* ================= 공통 fetch 헬퍼 ================= */
 async function apiGet(params) {
@@ -365,6 +369,14 @@ function showScreen(id){
     el(s).classList.toggle('hidden', s!==id);
   });
 }
+function orderedClasses(){
+  return [...MASTER.classes].sort((a,b)=> Number(a['회차']) - Number(b['회차']));
+}
+function shortDate(d){
+  if(!d) return '-';
+  const parts = String(d).slice(0,10).split('-');
+  return parts.length===3 ? `${parts[1]}/${parts[2]}` : d;
+}
 
 /* ================= 초기화 ================= */
 async function init() {
@@ -374,6 +386,7 @@ async function init() {
     MASTER = data;
     fillSchoolDropdown(el('loginSchool'));
     fillSchoolDropdown(el('admNewStudentSchool'));
+    fillDateDropdown(el('admOverviewDate'));
   } catch (err) {
     showMsg('서버 연결에 실패했습니다. API_URL 설정을 확인하세요.', 'err');
   }
@@ -381,6 +394,10 @@ async function init() {
 function fillSchoolDropdown(selectEl) {
   selectEl.innerHTML = '<option value="">학교 선택</option>' +
     MASTER.schools.map(s => `<option value="${s}">${s}</option>`).join('');
+}
+function fillDateDropdown(selectEl) {
+  selectEl.innerHTML = orderedClasses().map(c =>
+    `<option value="${c['수업날짜']}">${c['수업날짜']} · ${c['계통']}</option>`).join('');
 }
 
 /* ================= 로그인 화면 ================= */
@@ -404,14 +421,11 @@ function updateLoginButtons(){
   el('btnGoView').disabled = !ok;
 }
 
-let currentHoicha = 1;
-let studentRecordsCache = [];
-
-el('btnGoInput').addEventListener('click', () => {
+el('btnGoInput').addEventListener('click', async () => {
   CURRENT.school = el('loginSchool').value;
   CURRENT.name = el('loginName').value;
   el('headerSub').textContent = `${CURRENT.school} · ${CURRENT.name}`;
-  openInputScreen(1);
+  await openInputScreen();
 });
 el('btnGoView').addEventListener('click', async () => {
   CURRENT.school = el('loginSchool').value;
@@ -420,39 +434,34 @@ el('btnGoView').addEventListener('click', async () => {
   await openViewScreen();
 });
 
-/* ================= 입력 화면 ================= */
-function renderTrack(containerId, doneSet, activeHoicha, clickable) {
-  const box = el(containerId);
-  box.innerHTML = '';
-  for (let h = 1; h <= 5; h++) {
-    const tag = document.createElement('div');
-    tag.className = 'tag' + (doneSet.has(h) ? ' done' : '') + (h === activeHoicha ? ' current' : '');
-    tag.innerHTML = `<span class="num">${h}</span>회차`;
-    if (clickable) { tag.style.cursor = 'pointer'; tag.onclick = () => clickable(h); }
-    box.appendChild(tag);
-  }
-}
-
-async function openInputScreen(hoicha) {
-  currentHoicha = hoicha;
+/* ================= 입력 화면 (수업 날짜 드롭다운 기반) ================= */
+async function openInputScreen() {
   showScreen('screen-input');
 
-  const cls = MASTER.classes.find(c => String(c['회차']) === String(hoicha)) || {};
-  el('chipDate').textContent = `날짜 ${cls['수업날짜'] || '-'}`;
-  el('chipSystem').textContent = `계통 ${cls['계통'] || '-'}`;
+  const dateSel = el('inputDateSelect');
+  dateSel.innerHTML = orderedClasses().map(c =>
+    `<option value="${c['수업날짜']}">${c['수업날짜']} · ${c['계통']}</option>`).join('');
 
   const data = await apiGet({ action: 'getStudentRecords', school: CURRENT.school, name: CURRENT.name });
   studentRecordsCache = data.ok ? data.records : [];
-  const doneSet = new Set(studentRecordsCache.map(r => Number(r['회차'])));
-  renderTrack('inputTrack', doneSet, hoicha, (h) => openInputScreen(h));
 
-  const existing = studentRecordsCache.find(r => Number(r['회차']) === hoicha);
+  dateSel.onchange = () => loadInputForDate(dateSel.value);
+  if (dateSel.value) loadInputForDate(dateSel.value);
+}
+
+function loadInputForDate(date){
+  const cls = MASTER.classes.find(c => c['수업날짜'] === date) || {};
+  currentHoicha = cls['회차'];
+  el('chipSystem').textContent = `계통 ${cls['계통'] || '-'}`;
+
+  const existing = studentRecordsCache.find(r => String(r['회차']) === String(currentHoicha));
   el('fldExpect').value = existing ? existing['수업전_기대'] : '';
   el('fldLearned').value = existing ? existing['수업후_배운것'] : '';
   el('fldCurious').value = existing ? existing['수업후_궁금한것'] : '';
 }
 
 el('btnSubmitRecord').addEventListener('click', async () => {
+  if (!currentHoicha) { showMsg('수업 날짜를 선택해주세요.', 'err'); return; }
   el('btnSubmitRecord').disabled = true;
   el('btnSubmitRecord').textContent = '저장 중...';
   const res = await apiPost({
@@ -462,31 +471,50 @@ el('btnSubmitRecord').addEventListener('click', async () => {
   });
   el('btnSubmitRecord').disabled = false;
   el('btnSubmitRecord').textContent = '저장하기 →';
-  if (res.ok) { showMsg(`${currentHoicha}회차 기록이 저장되었습니다.`, 'ok'); openInputScreen(currentHoicha); }
+  if (res.ok) {
+    showMsg('기록이 저장되었습니다.', 'ok');
+    const data = await apiGet({ action: 'getStudentRecords', school: CURRENT.school, name: CURRENT.name });
+    studentRecordsCache = data.ok ? data.records : [];
+  }
   else showMsg(res.error || '저장에 실패했습니다.', 'err');
 });
 el('btnBackFromInput').addEventListener('click', () => showScreen('screen-login'));
 
 /* ================= 조회 화면 ================= */
+let lastViewRecords = [];
+let lastViewDeepdive = null;
+
 async function openViewScreen() {
   showScreen('screen-view');
   const data = await apiGet({ action: 'getStudentRecords', school: CURRENT.school, name: CURRENT.name });
   const records = data.ok ? data.records : [];
-  const doneSet = new Set(records.map(r => Number(r['회차'])));
-  renderTrack('viewTrack', doneSet, 0, null);
+  lastViewRecords = records;
+  lastViewDeepdive = data.deepdive || null;
+
+  const classes = orderedClasses();
+  const doneSet = new Set(records.map(r => String(r['회차'])));
+
+  const trackBox = el('viewTrack');
+  trackBox.innerHTML = '';
+  classes.forEach(c => {
+    const tag = document.createElement('div');
+    tag.className = 'tag' + (doneSet.has(String(c['회차'])) ? ' done' : '');
+    tag.innerHTML = `<span class="num">${shortDate(c['수업날짜'])}</span>${c['계통']}`;
+    trackBox.appendChild(tag);
+  });
 
   const list = el('viewList');
   list.innerHTML = '';
-  for (let h = 1; h <= 5; h++) {
-    const r = records.find(x => Number(x['회차']) === h);
+  classes.forEach(c => {
+    const r = records.find(x => String(x['회차']) === String(c['회차']));
     const div = document.createElement('div');
     div.className = 'rec-card';
     if (!r) {
-      div.innerHTML = `<div class="head"><span class="badge empty-badge">${h}회차 · 미제출</span></div>`;
+      div.innerHTML = `<div class="head"><span class="badge empty-badge">${c['수업날짜']} · 미제출</span></div>`;
     } else {
       div.innerHTML = `
         <div class="head">
-          <span class="badge">${h}회차 · ${r['계통']}</span>
+          <span class="badge">${r['수업날짜']} · ${r['계통']}</span>
           <span class="meta">${r['최종제출일시']}</span>
         </div>
         <div class="field-label">수업 전 기대하는 것</div><div class="field-val">${r['수업전_기대']||'-'}</div>
@@ -495,9 +523,9 @@ async function openViewScreen() {
       `;
     }
     list.appendChild(div);
-  }
+  });
 
-  if (doneSet.size === 5) {
+  if (classes.length > 0 && doneSet.size === classes.length) {
     el('deepDiveBox').classList.remove('hidden');
     if (data.deepdive) {
       el('ddKeywords').value = data.deepdive['관심키워드3개'] || '';
@@ -513,10 +541,74 @@ el('btnSaveDeepDive').addEventListener('click', async () => {
     action: 'submitDeepDive', school: CURRENT.school, name: CURRENT.name,
     키워드: el('ddKeywords').value, 후보: el('ddCandidate').value, 이유: el('ddReason').value,
   });
-  if (res.ok) showMsg('심화탐구 내용이 저장되었습니다.', 'ok');
+  if (res.ok) {
+    showMsg('심화탐구 내용이 저장되었습니다.', 'ok');
+    lastViewDeepdive = { 관심키워드3개: el('ddKeywords').value, 탐구후보: el('ddCandidate').value, 선정이유: el('ddReason').value };
+  }
   else showMsg(res.error || '저장에 실패했습니다.', 'err');
 });
 el('btnBackFromView').addEventListener('click', () => showScreen('screen-login'));
+
+/* ================= 통합보기 이미지로 내보내기 ================= */
+el('btnExportImage').addEventListener('click', async () => {
+  el('btnExportImage').disabled = true;
+  el('btnExportImage').textContent = '이미지 생성 중...';
+  try {
+    const container = document.createElement('div');
+    container.style.cssText = 'position:fixed;left:-9999px;top:0;width:640px;background:#FCF3D9;padding:28px;font-family:Pretendard,sans-serif;color:#1A1A1A;';
+
+    let html = `
+      <div style="font-weight:800;font-size:22px;margin-bottom:2px;">${CURRENT.school} · ${CURRENT.name}</div>
+      <div style="font-size:12px;color:#7A7364;letter-spacing:.1em;text-transform:uppercase;font-weight:800;margin-bottom:18px;">인체구조와 기능 · 대학연계수업 통합 기록</div>
+    `;
+    orderedClasses().forEach(c => {
+      const r = lastViewRecords.find(x => String(x['회차']) === String(c['회차']));
+      html += `<div style="border:1.5px solid #1A1A1A;border-radius:18px;padding:16px 18px;margin-bottom:12px;background:#FFFDF6;">
+        <div style="font-weight:800;background:#CDEAF7;color:#1F5C77;display:inline-block;padding:4px 12px;border-radius:999px;border:1.5px solid #1A1A1A;font-size:13px;margin-bottom:8px;">${c['수업날짜']} · ${c['계통']}</div>`;
+      if (r) {
+        html += `
+          <div style="font-size:12px;font-weight:800;color:#7A7364;margin-top:8px;">수업 전 기대하는 것</div>
+          <div style="font-size:14px;line-height:1.55;margin-top:2px;">${(r['수업전_기대']||'-').replace(/</g,'&lt;')}</div>
+          <div style="font-size:12px;font-weight:800;color:#7A7364;margin-top:8px;">수업 후 새롭게 배운 것</div>
+          <div style="font-size:14px;line-height:1.55;margin-top:2px;">${(r['수업후_배운것']||'-').replace(/</g,'&lt;')}</div>
+          <div style="font-size:12px;font-weight:800;color:#7A7364;margin-top:8px;">더 궁금해진 것</div>
+          <div style="font-size:14px;line-height:1.55;margin-top:2px;">${(r['수업후_궁금한것']||'-').replace(/</g,'&lt;')}</div>
+        `;
+      } else {
+        html += `<div style="font-size:13px;color:#B3AA8F;">미제출</div>`;
+      }
+      html += `</div>`;
+    });
+
+    const dd = lastViewDeepdive;
+    if (dd) {
+      html += `<div style="border:1.5px solid #1A1A1A;border-radius:18px;padding:16px 18px;background:#FFFDF6;">
+        <div style="font-weight:800;background:#F6C445;color:#1A1A1A;display:inline-block;padding:4px 12px;border-radius:999px;border:1.5px solid #1A1A1A;font-size:13px;margin-bottom:8px;">심화탐구 주제 선택</div>
+        <div style="font-size:12px;font-weight:800;color:#7A7364;margin-top:8px;">① 관심 키워드</div>
+        <div style="font-size:14px;line-height:1.55;margin-top:2px;">${(dd['관심키워드3개']||'-').replace(/</g,'&lt;')}</div>
+        <div style="font-size:12px;font-weight:800;color:#7A7364;margin-top:8px;">② 최종 탐구주제 후보</div>
+        <div style="font-size:14px;line-height:1.55;margin-top:2px;white-space:pre-wrap;">${(dd['탐구후보']||'-').replace(/</g,'&lt;')}</div>
+        <div style="font-size:12px;font-weight:800;color:#7A7364;margin-top:8px;">③ 선정 이유</div>
+        <div style="font-size:14px;line-height:1.55;margin-top:2px;white-space:pre-wrap;">${(dd['선정이유']||'-').replace(/</g,'&lt;')}</div>
+      </div>`;
+    }
+
+    container.innerHTML = html;
+    document.body.appendChild(container);
+    const canvas = await html2canvas(container, { backgroundColor: '#FCF3D9', scale: 2 });
+    document.body.removeChild(container);
+
+    const link = document.createElement('a');
+    link.download = `${CURRENT.school}_${CURRENT.name}_통합기록.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    showMsg('이미지가 저장되었습니다.', 'ok');
+  } catch (err) {
+    showMsg('이미지 생성에 실패했습니다.', 'err');
+  }
+  el('btnExportImage').disabled = false;
+  el('btnExportImage').textContent = '통합 기록 이미지로 저장 ⬇';
+});
 
 /* ================= 관리자 ================= */
 el('btnAdminOpen').addEventListener('click', () => showScreen('screen-admin-login'));
@@ -539,22 +631,26 @@ document.querySelectorAll('.tabs button').forEach(btn => {
 
 async function openAdminDashboard() {
   showScreen('screen-admin');
-  await loadOverview();
+  fillDateDropdown(el('admOverviewDate'));
+  document.querySelector('#overviewTable tbody').innerHTML = '';
   fillSchoolDropdown(el('admDetailSchool'));
   renderMasterLists();
 }
 
-async function loadOverview() {
-  const res = await apiGet({ action: 'adminOverview', pw: ADMIN_PW });
+el('btnAdmOverviewLoad').addEventListener('click', async () => {
+  const date = el('admOverviewDate').value;
+  if (!date) return;
+  const res = await apiGet({ action: 'adminOverviewByDate', pw: ADMIN_PW, date });
   const tbody = document.querySelector('#overviewTable tbody');
   tbody.innerHTML = '';
   if (!res.ok) { showMsg(res.error, 'err'); return; }
-  res.overview.forEach(row => {
+  res.rows.forEach(row => {
     const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${row['학교']}</td><td>${row['이름']}</td><td>${row['제출회차수']}/5</td><td>${row['최종제출일시']||'-'}</td>`;
+    const submitted = !!row['제출일시'];
+    tr.innerHTML = `<td>${row['학교']}</td><td>${row['이름']}</td><td class="${submitted?'':'blank'}">${submitted ? row['제출일시'] : '—'}</td>`;
     tbody.appendChild(tr);
   });
-}
+});
 
 el('admDetailSchool').addEventListener('change', () => {
   const school = el('admDetailSchool').value;
@@ -569,20 +665,20 @@ el('btnAdmDetailLoad').addEventListener('click', async () => {
   const box = el('admDetailResult');
   box.innerHTML = '';
   if (!res.ok) { showMsg(res.error,'err'); return; }
-  for (let h=1; h<=5; h++){
-    const r = res.records.find(x=>Number(x['회차'])===h);
+  orderedClasses().forEach(c => {
+    const r = res.records.find(x=>String(x['회차'])===String(c['회차']));
     const div = document.createElement('div');
     div.className='rec-card';
-    if(!r){ div.innerHTML = `<div class="head"><span class="badge empty-badge">${h}회차 · 미제출</span></div>`; }
+    if(!r){ div.innerHTML = `<div class="head"><span class="badge empty-badge">${c['수업날짜']} · 미제출</span></div>`; }
     else {
       div.innerHTML = `
-        <div class="head"><span class="badge">${h}회차 · ${r['계통']}</span><span class="meta">${r['최종제출일시']}</span></div>
+        <div class="head"><span class="badge">${r['수업날짜']} · ${r['계통']}</span><span class="meta">${r['최종제출일시']}</span></div>
         <div class="field-label">수업 전 기대</div><div class="field-val">${r['수업전_기대']||'-'}</div>
         <div class="field-label">배운 것</div><div class="field-val">${r['수업후_배운것']||'-'}</div>
         <div class="field-label">궁금한 것</div><div class="field-val">${r['수업후_궁금한것']||'-'}</div>`;
     }
     box.appendChild(div);
-  }
+  });
   if (res.deepdive){
     const div = document.createElement('div');
     div.className='rec-card';
@@ -606,11 +702,11 @@ function renderMasterLists(){
       <button class="btn-ghost btn-small btn-danger" onclick="deleteStudent('${s['학교']}','${s['이름']}')">삭제</button>
     </div>`).join('');
 
-  el('admClassList').innerHTML = MASTER.classes.map(c => `
+  el('admClassList').innerHTML = orderedClasses().map(c => `
     <div class="card" style="padding:12px;margin-bottom:8px;">
       <div class="row-inline">
         <div><label style="margin-bottom:4px;">${c['회차']}회차 날짜</label>
-          <input type="text" id="cls-date-${c['회차']}" value="${c['수업날짜']}"></div>
+          <input type="date" id="cls-date-${c['회차']}" value="${c['수업날짜']}"></div>
         <div><label style="margin-bottom:4px;">계통</label>
           <input type="text" id="cls-sys-${c['회차']}" value="${c['계통']}"></div>
       </div>
@@ -631,8 +727,9 @@ async function deleteStudent(school,name){
 async function saveClass(hoicha){
   const 날짜 = el(`cls-date-${hoicha}`).value;
   const 계통 = el(`cls-sys-${hoicha}`).value;
+  if (!날짜) { showMsg('날짜를 선택해주세요.', 'err'); return; }
   const res = await apiPost({action:'adminSaveClass', pw:ADMIN_PW, hoicha, 날짜, 계통});
-  if(res.ok){ await init(); showMsg(`${hoicha}회차 정보가 저장되었습니다.`,'ok'); } else showMsg(res.error,'err');
+  if(res.ok){ await init(); renderMasterLists(); fillDateDropdown(el('admOverviewDate')); showMsg(`${hoicha}회차 정보가 저장되었습니다.`,'ok'); } else showMsg(res.error,'err');
 }
 el('btnAdmAddSchool').addEventListener('click', async () => {
   const school = el('admNewSchool').value.trim();
