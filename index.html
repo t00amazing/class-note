@@ -697,12 +697,63 @@ function renderMasterLists(){
       <button class="btn-ghost btn-small btn-danger" onclick="deleteSchool('${s}')">삭제</button>
     </div>`).join('');
 
-  el('admStudentList').innerHTML = MASTER.students.map(s=>`
-    <div class="list-item"><span>${s['학교']} · ${s['이름']}</span>
-      <button class="btn-ghost btn-small btn-danger" onclick="deleteStudent('${s['학교']}','${s['이름']}')">삭제</button>
+  renderStudentList();
+  renderClassList();
+}
+
+/* ----- 학생 관리: 체크박스 일괄삭제 + 인라인 수정 ----- */
+function renderStudentList(){
+  const rows = MASTER.students.map((s,i) => `
+    <div class="list-item" id="student-row-${i}">
+      <label style="display:flex;align-items:center;gap:8px;flex:1;cursor:pointer;">
+        <input type="checkbox" class="student-check" data-school="${s['학교']}" data-name="${s['이름']}">
+        <span>${s['학교']} · ${s['이름']}</span>
+      </label>
+      <div style="display:flex;gap:6px;">
+        <button class="btn-ghost btn-small" onclick="startEditStudent(${i})">수정</button>
+        <button class="btn-ghost btn-small btn-danger" onclick="deleteStudent('${s['학교']}','${s['이름']}')">삭제</button>
+      </div>
     </div>`).join('');
 
-  el('admClassList').innerHTML = orderedClasses().map(c => `
+  el('admStudentList').innerHTML = `
+    ${rows || '<p class="empty-note">등록된 학생이 없습니다.</p>'}
+    <button class="btn-ghost btn-small btn-danger" id="btnBulkDeleteStudents" style="width:100%;margin-top:10px;">선택한 학생 일괄 삭제</button>
+  `;
+  el('btnBulkDeleteStudents').addEventListener('click', bulkDeleteStudents);
+}
+
+function startEditStudent(i){
+  const s = MASTER.students[i];
+  const row = el(`student-row-${i}`);
+  row.innerHTML = `
+    <div class="row-inline" style="flex:1;margin:0;">
+      <select id="edit-school-${i}">${MASTER.schools.map(sc=>`<option value="${sc}" ${sc===s['학교']?'selected':''}>${sc}</option>`).join('')}</select>
+      <input type="text" id="edit-name-${i}" value="${s['이름']}" style="margin-bottom:0;">
+    </div>
+    <div style="display:flex;gap:6px;">
+      <button class="btn-ghost btn-small" onclick="saveEditStudent(${i})">저장</button>
+      <button class="btn-ghost btn-small" onclick="renderStudentList()">취소</button>
+    </div>`;
+}
+async function saveEditStudent(i){
+  const s = MASTER.students[i];
+  const newSchool = el(`edit-school-${i}`).value;
+  const newName = el(`edit-name-${i}`).value.trim();
+  if(!newName){ showMsg('이름을 입력해주세요.','err'); return; }
+  const res = await apiPost({action:'adminUpdateStudent', pw:ADMIN_PW, oldSchool:s['학교'], oldName:s['이름'], newSchool, newName});
+  if(res.ok){ await init(); renderStudentList(); showMsg('학생 정보가 수정되었습니다.','ok'); } else showMsg(res.error,'err');
+}
+async function bulkDeleteStudents(){
+  const checked = [...document.querySelectorAll('.student-check:checked')].map(c=>({school:c.dataset.school, name:c.dataset.name}));
+  if(!checked.length){ showMsg('삭제할 학생을 선택해주세요.','err'); return; }
+  if(!confirm(`선택한 ${checked.length}명을 삭제할까요?`)) return;
+  const res = await apiPost({action:'adminDeleteStudentsBulk', pw:ADMIN_PW, students:checked});
+  if(res.ok){ await init(); renderStudentList(); showMsg(`${res.deletedCount}명이 삭제되었습니다.`,'ok'); } else showMsg(res.error,'err');
+}
+
+/* ----- 회차 관리: 회차 추가/삭제 (5회차 고정 아님) ----- */
+function renderClassList(){
+  const cards = orderedClasses().map(c => `
     <div class="card" style="padding:12px;margin-bottom:8px;">
       <div class="row-inline">
         <div><label style="margin-bottom:4px;">${c['회차']}회차 날짜</label>
@@ -710,8 +761,27 @@ function renderMasterLists(){
         <div><label style="margin-bottom:4px;">계통</label>
           <input type="text" id="cls-sys-${c['회차']}" value="${c['계통']}"></div>
       </div>
-      <button class="btn-ghost btn-small" onclick="saveClass(${c['회차']})">저장</button>
+      <div class="btn-row">
+        <button class="btn-ghost btn-small" onclick="saveClass(${c['회차']})">저장</button>
+        <button class="btn-ghost btn-small btn-danger" onclick="deleteClass(${c['회차']})">이 회차 삭제</button>
+      </div>
     </div>`).join('');
+
+  el('admClassList').innerHTML = `${cards}
+    <button class="btn-ghost" style="width:100%;margin-top:6px;" id="btnAddClass">+ 회차 추가</button>`;
+  el('btnAddClass').addEventListener('click', addClass);
+}
+async function addClass(){
+  const res = await apiPost({action:'adminAddClass', pw:ADMIN_PW, 날짜:'', 계통:''});
+  if(res.ok){
+    await init(); renderClassList(); fillDateDropdown(el('admOverviewDate'));
+    showMsg(`${res.hoicha}회차가 추가되었습니다. 날짜와 계통을 입력하고 저장해주세요.`,'ok');
+  } else showMsg(res.error,'err');
+}
+async function deleteClass(hoicha){
+  if(!confirm(`${hoicha}회차를 삭제할까요? (이미 제출된 학생 기록은 남아있지만 화면에는 더 이상 보이지 않습니다)`)) return;
+  const res = await apiPost({action:'adminDeleteClass', pw:ADMIN_PW, hoicha});
+  if(res.ok){ await init(); renderClassList(); fillDateDropdown(el('admOverviewDate')); showMsg('삭제되었습니다.','ok'); } else showMsg(res.error,'err');
 }
 
 async function deleteSchool(school){
