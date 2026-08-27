@@ -251,7 +251,16 @@
     <textarea id="fldCurious" placeholder="수업을 듣고 더 궁금해진 점을 적어보세요."></textarea>
 
     <button class="btn-primary" id="btnSubmitRecord">저장하기 →</button>
-    <button class="btn-ghost" style="width:100%;margin-top:8px;" id="btnBackFromInput">뒤로가기</button>
+
+    <hr style="border:none;border-top:1px dashed var(--line);margin:18px 0;">
+    <button class="btn-ghost" style="width:100%;" id="btnTogglePeers">이 수업에 대해 친구들이 남긴 기록 보기 ▾</button>
+    <div id="peersBox" class="hidden" style="margin-top:14px;">
+      <div class="rec-card"><div class="head"><span class="badge">수업 전 기대하는 것 모음</span></div><div id="peersExpect"></div></div>
+      <div class="rec-card"><div class="head"><span class="badge">수업 후 배운 것 모음</span></div><div id="peersLearned"></div></div>
+      <div class="rec-card"><div class="head"><span class="badge">더 궁금해진 것 모음</span></div><div id="peersCurious"></div></div>
+    </div>
+
+    <button class="btn-ghost" style="width:100%;margin-top:14px;" id="btnBackFromInput">뒤로가기</button>
   </section>
 
   <!-- ===================== 학생 조회 ===================== -->
@@ -346,6 +355,8 @@ let MASTER = { schools: [], students: [], classes: [] };
 let CURRENT = { school: '', name: '' };
 let ADMIN_PW = '';
 let currentHoicha = null;
+let currentDate = null;
+let peersLoadedDate = null;
 let studentRecordsCache = [];
 
 /* ================= 공통 fetch 헬퍼 ================= */
@@ -452,12 +463,17 @@ async function openInputScreen() {
 function loadInputForDate(date){
   const cls = MASTER.classes.find(c => c['수업날짜'] === date) || {};
   currentHoicha = cls['회차'];
+  currentDate = date;
   el('chipSystem').textContent = `계통 ${cls['계통'] || '-'}`;
 
   const existing = studentRecordsCache.find(r => String(r['회차']) === String(currentHoicha));
   el('fldExpect').value = existing ? existing['수업전_기대'] : '';
   el('fldLearned').value = existing ? existing['수업후_배운것'] : '';
   el('fldCurious').value = existing ? existing['수업후_궁금한것'] : '';
+
+  peersLoadedDate = null;
+  el('peersBox').classList.add('hidden');
+  el('btnTogglePeers').textContent = '이 수업에 대해 친구들이 남긴 기록 보기 ▾';
 }
 
 el('btnSubmitRecord').addEventListener('click', async () => {
@@ -479,6 +495,36 @@ el('btnSubmitRecord').addEventListener('click', async () => {
   else showMsg(res.error || '저장에 실패했습니다.', 'err');
 });
 el('btnBackFromInput').addEventListener('click', () => showScreen('screen-login'));
+
+function renderPeerList(containerId, items){
+  const box = el(containerId);
+  if (!items || !items.length) { box.innerHTML = '<div class="empty-note">아직 작성된 내용이 없습니다.</div>'; return; }
+  box.innerHTML = items.map(t => `<div class="field-val" style="padding:8px 0;border-bottom:1px dashed var(--line);">${String(t).replace(/</g,'&lt;')}</div>`).join('');
+}
+el('btnTogglePeers').addEventListener('click', async () => {
+  const box = el('peersBox');
+  const willOpen = box.classList.contains('hidden');
+  if (willOpen) {
+    if (!currentDate) { showMsg('수업 날짜를 먼저 선택해주세요.', 'err'); return; }
+    if (peersLoadedDate !== currentDate) {
+      el('btnTogglePeers').textContent = '불러오는 중...';
+      const res = await apiGet({ action: 'getClassResponses', date: currentDate });
+      if (res.ok) {
+        renderPeerList('peersExpect', res.기대);
+        renderPeerList('peersLearned', res.배운것);
+        renderPeerList('peersCurious', res.궁금한것);
+        peersLoadedDate = currentDate;
+      } else {
+        showMsg(res.error || '불러오기에 실패했습니다.', 'err');
+      }
+    }
+    box.classList.remove('hidden');
+    el('btnTogglePeers').textContent = '친구들의 기록 숨기기 ▴';
+  } else {
+    box.classList.add('hidden');
+    el('btnTogglePeers').textContent = '이 수업에 대해 친구들이 남긴 기록 보기 ▾';
+  }
+});
 
 /* ================= 조회 화면 ================= */
 let lastViewRecords = [];
@@ -689,6 +735,29 @@ el('btnAdmDetailLoad').addEventListener('click', async () => {
       <div class="field-label">선정 이유</div><div class="field-val">${res.deepdive['선정이유']||'-'}</div>`;
     box.appendChild(div);
   }
+
+  // ----- 항목별 전체 수합 보기 -----
+  const divider = document.createElement('p');
+  divider.className = 'sub';
+  divider.style.margin = '18px 0 10px';
+  divider.textContent = '아래는 항목별로 모아본 내용입니다.';
+  box.appendChild(divider);
+
+  const groups = [
+    { label: '수업 전 기대하는 것 모음', field: '수업전_기대' },
+    { label: '수업 후 새롭게 배운 것 모음', field: '수업후_배운것' },
+    { label: '더 궁금해진 것 모음', field: '수업후_궁금한것' },
+  ];
+  groups.forEach(g => {
+    const items = res.records.filter(r => r[g.field] && String(r[g.field]).trim() !== '');
+    const div = document.createElement('div');
+    div.className = 'rec-card';
+    const body = items.length
+      ? items.map(r => `<div class="field-label">${r['수업날짜']}</div><div class="field-val">${r[g.field]}</div>`).join('')
+      : '<div class="empty-note">작성된 내용이 없습니다.</div>';
+    div.innerHTML = `<div class="head"><span class="badge">${g.label}</span></div>${body}`;
+    box.appendChild(div);
+  });
 });
 
 function renderMasterLists(){
