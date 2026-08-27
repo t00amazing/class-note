@@ -297,6 +297,7 @@
     <div class="tabs">
       <button class="active" data-tab="overview">제출현황</button>
       <button data-tab="detail">학생상세</button>
+      <button data-tab="collect">항목별 모아보기</button>
       <button data-tab="master">마스터관리</button>
     </div>
 
@@ -318,6 +319,17 @@
       </div>
       <button class="btn-ghost" id="btnAdmDetailLoad" style="width:100%;margin-bottom:14px;">조회</button>
       <div id="admDetailResult"></div>
+    </div>
+
+    <div id="admin-collect" class="hidden">
+      <label>수업 날짜 선택 (여러 개 선택 가능)</label>
+      <div id="admCollectDates" style="margin-bottom:10px;"></div>
+      <div class="btn-row" style="margin-bottom:14px;">
+        <button class="btn-ghost btn-small" id="btnCollectSelectAll">전체 선택</button>
+        <button class="btn-ghost btn-small" id="btnCollectClear">선택 해제</button>
+      </div>
+      <button class="btn-primary" id="btnAdmCollectLoad">항목별로 모아보기 →</button>
+      <div id="admCollectResult" style="margin-top:14px;"></div>
     </div>
 
     <div id="admin-master" class="hidden">
@@ -671,7 +683,7 @@ document.querySelectorAll('.tabs button').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    ['overview','detail','master'].forEach(t => el(`admin-${t}`).classList.toggle('hidden', t !== btn.dataset.tab));
+    ['overview','detail','collect','master'].forEach(t => el(`admin-${t}`).classList.toggle('hidden', t !== btn.dataset.tab));
   });
 });
 
@@ -680,8 +692,48 @@ async function openAdminDashboard() {
   fillDateDropdown(el('admOverviewDate'));
   document.querySelector('#overviewTable tbody').innerHTML = '';
   fillSchoolDropdown(el('admDetailSchool'));
+  renderCollectDateCheckboxes();
+  el('admCollectResult').innerHTML = '';
   renderMasterLists();
 }
+
+function renderCollectDateCheckboxes(){
+  el('admCollectDates').innerHTML = orderedClasses().map(c => `
+    <label style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid rgba(26,26,26,.1);font-size:14px;">
+      <input type="checkbox" class="collect-date-check" value="${c['수업날짜']}">
+      <span>${c['수업날짜']} · ${c['계통']}</span>
+    </label>`).join('') || '<p class="empty-note">등록된 수업이 없습니다.</p>';
+}
+el('btnCollectSelectAll').addEventListener('click', () => {
+  document.querySelectorAll('.collect-date-check').forEach(c => c.checked = true);
+});
+el('btnCollectClear').addEventListener('click', () => {
+  document.querySelectorAll('.collect-date-check').forEach(c => c.checked = false);
+});
+el('btnAdmCollectLoad').addEventListener('click', async () => {
+  const dates = [...document.querySelectorAll('.collect-date-check:checked')].map(c => c.value);
+  if (!dates.length) { showMsg('수업 날짜를 하나 이상 선택해주세요.', 'err'); return; }
+  const res = await apiGet({ action: 'adminCollectByDates', pw: ADMIN_PW, dates: dates.join(',') });
+  const box = el('admCollectResult');
+  box.innerHTML = '';
+  if (!res.ok) { showMsg(res.error, 'err'); return; }
+
+  const groups = [
+    { label: '수업 전 기대하는 것 모음', field: '수업전_기대' },
+    { label: '수업 후 새롭게 배운 것 모음', field: '수업후_배운것' },
+    { label: '더 궁금해진 것 모음', field: '수업후_궁금한것' },
+  ];
+  groups.forEach(g => {
+    const items = res.records.filter(r => r[g.field] && String(r[g.field]).trim() !== '');
+    const div = document.createElement('div');
+    div.className = 'rec-card';
+    const body = items.length
+      ? items.map(r => `<div class="field-label">${r['학교']} · ${r['이름']} · ${r['수업날짜']}</div><div class="field-val">${r[g.field]}</div>`).join('')
+      : '<div class="empty-note">작성된 내용이 없습니다.</div>';
+    div.innerHTML = `<div class="head"><span class="badge">${g.label}</span></div>${body}`;
+    box.appendChild(div);
+  });
+});
 
 el('btnAdmOverviewLoad').addEventListener('click', async () => {
   const date = el('admOverviewDate').value;
@@ -843,14 +895,14 @@ function renderClassList(){
 async function addClass(){
   const res = await apiPost({action:'adminAddClass', pw:ADMIN_PW, 날짜:'', 계통:''});
   if(res.ok){
-    await init(); renderClassList(); fillDateDropdown(el('admOverviewDate'));
+    await init(); renderClassList(); fillDateDropdown(el('admOverviewDate')); renderCollectDateCheckboxes();
     showMsg(`${res.hoicha}회차가 추가되었습니다. 날짜와 계통을 입력하고 저장해주세요.`,'ok');
   } else showMsg(res.error,'err');
 }
 async function deleteClass(hoicha){
   if(!confirm(`${hoicha}회차를 삭제할까요? (이미 제출된 학생 기록은 남아있지만 화면에는 더 이상 보이지 않습니다)`)) return;
   const res = await apiPost({action:'adminDeleteClass', pw:ADMIN_PW, hoicha});
-  if(res.ok){ await init(); renderClassList(); fillDateDropdown(el('admOverviewDate')); showMsg('삭제되었습니다.','ok'); } else showMsg(res.error,'err');
+  if(res.ok){ await init(); renderClassList(); fillDateDropdown(el('admOverviewDate')); renderCollectDateCheckboxes(); showMsg('삭제되었습니다.','ok'); } else showMsg(res.error,'err');
 }
 
 async function deleteSchool(school){
@@ -868,7 +920,7 @@ async function saveClass(hoicha){
   const 계통 = el(`cls-sys-${hoicha}`).value;
   if (!날짜) { showMsg('날짜를 선택해주세요.', 'err'); return; }
   const res = await apiPost({action:'adminSaveClass', pw:ADMIN_PW, hoicha, 날짜, 계통});
-  if(res.ok){ await init(); renderMasterLists(); fillDateDropdown(el('admOverviewDate')); showMsg(`${hoicha}회차 정보가 저장되었습니다.`,'ok'); } else showMsg(res.error,'err');
+  if(res.ok){ await init(); renderMasterLists(); fillDateDropdown(el('admOverviewDate')); renderCollectDateCheckboxes(); showMsg(`${hoicha}회차 정보가 저장되었습니다.`,'ok'); } else showMsg(res.error,'err');
 }
 el('btnAdmAddSchool').addEventListener('click', async () => {
   const school = el('admNewSchool').value.trim();
